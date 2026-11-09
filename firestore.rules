@@ -1,0 +1,9 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{db}/documents {
+    // Nur vom Admin angelegte Nutzer existieren (Selbstregistrierung deaktiviert). Nutzdaten sind zusätzlich clientseitig verschlüsselt.
+    match /meta/{d} { allow read, create: if request.auth != null; allow update, delete: if false; }
+    match /rulesets/{d} { allow read, create, update: if request.auth != null; allow delete: if false; }
+    match /bewertungen/{d} { allow read, create, update, delete: if request.auth != null; }
+  }
+}

@@ -1,0 +1,3 @@
+{"name":"dgnb-env12","private":true,"type":"module","engines":{"node":">=20"},
+"scripts":{"build":"mkdir -p public/lib && cp node_modules/pdfjs-dist/build/pdf.min.mjs node_modules/pdfjs-dist/build/pdf.worker.min.mjs public/lib/"},
+"dependencies":{"pdfjs-dist":"4.10.38"}}

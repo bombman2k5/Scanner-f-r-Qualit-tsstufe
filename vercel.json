@@ -1,0 +1,5 @@
+{"buildCommand":"npm run build","outputDirectory":"public","functions":{"api/*.js":{"maxDuration":60}},
+"headers":[{"source":"/(.*)","headers":[
+{"key":"Content-Security-Policy","value":"default-src 'self'; script-src 'self' https://www.gstatic.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; worker-src 'self' blob:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com; frame-src https://*.firebaseapp.com; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"},
+{"key":"Strict-Transport-Security","value":"max-age=63072000; includeSubDomains"},{"key":"X-Content-Type-Options","value":"nosniff"},
+{"key":"Referrer-Policy","value":"no-referrer"},{"key":"Permissions-Policy","value":"camera=(), microphone=(), geolocation=()"}]}]}
