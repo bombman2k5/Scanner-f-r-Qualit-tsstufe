@@ -5,7 +5,7 @@ const {getAuth,signInWithEmailAndPassword,signOut,onAuthStateChanged,sendPasswor
 const {getFirestore,collection,doc,setDoc,getDoc,getDocs,deleteDoc,query,orderBy,serverTimestamp}=await import(G+'firebase-firestore.js');
 const $=i=>document.getElementById(i),esc=s=>String(s??'').replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
 const CFG=await(await fetch('/api/config')).json();const app=initializeApp(CFG),auth=getAuth(app),db=getFirestore(app);await setPersistence(auth,browserSessionPersistence);
-let SCAN=[],KEY=null,RS=DEFAULT,RSVER='integriert',LAST=null,VERS={},H={},idle;
+const ST=['QS1','QS2','QS3','QS4'],NS=r=>(r.stufen||ST).length;let RF=[],SCAN=[],KEY=null,RS=DEFAULT,RSVER='integriert',LAST=null,VERS={},H={},idle;
 $('rp').onclick=async()=>{try{await sendPasswordResetEmail(auth,$('em').value.trim())}catch{}$('lm').textContent='Falls die Adresse freigegeben ist, wurde eine E-Mail zum Setzen des Passworts gesendet.'};
 // ---- Verschlüsselung (AES-GCM, Schlüssel aus Passphrase, nur im Speicher) ----
 const te=new TextEncoder(),td=new TextDecoder();
@@ -29,15 +29,15 @@ $('un').onclick=async()=>{const p=$('ph').value,ref=doc(db,'meta','crypto');$('u
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('on',x==b));for(const x of'bvg')$('t_'+x).hidden=x!=b.dataset.t;if(b.dataset.t=='v')hist();if(b.dataset.t=='g')vers()});
 // ---- Regelwerk: Validierung, Felder, Versionen ----
 const okc=c=>c&&typeof c=='object'&&(c.man?1:c.or?Array.isArray(c.or)&&c.or.every(okc):c.and?Array.isArray(c.and)&&c.and.every(okc):typeof c.k=='string'&&('lt'in c||'is'in c||Array.isArray(c.in)||'has'in c));
-const chk=r=>{if(!r||!Array.isArray(r.rows))return['„rows“ fehlt'];const e=[];r.rows.forEach(w=>{if(w.n==null||!Array.isArray(w.q)||w.q.length!=4)e.push(`Zeile ${w.n}: q braucht 4 Stufen`);else w.q.forEach((s,i)=>{if(!Array.isArray(s)||!s.every(okc))e.push(`Zeile ${w.n} QS${i+1}: ungültige Bedingung`)})});return e};
+const chk=r=>{if(!r||!Array.isArray(r.rows))return['„rows“ fehlt'];const e=[];r.rows.forEach(w=>{if(w.n==null||!Array.isArray(w.q)||w.q.length!=NS(r))e.push(`Zeile ${w.n}: q braucht ${NS(r)} Stufen`);else w.q.forEach((s,i)=>{if(!Array.isArray(s)||!s.every(okc))e.push(`Zeile ${w.n} QS${i+1}: ungültige Bedingung`)})});return e};
 const fix=r=>{const F=new Map(DEFAULT.fields.map(f=>[f.k,f]));(r.fields||[]).forEach(f=>F.set(f.k,f));
  const w=c=>{if(c.or)c.or.forEach(w);else if(c.and)c.and.forEach(w);else if(c.k&&!F.has(c.k))F.set(c.k,{k:c.k,l:c.k,t:'lt'in c?'n':'is'in c?'b':'s'})};r.rows.forEach(x=>x.q.forEach(s=>s.forEach(w)));
- r.fields=[...F.values()];r.limits={...DEFAULT.limits,...r.limits};return r};
+ r.fields=[...F.values()];r.limits={...DEFAULT.limits,...r.limits};r.stufen=r.stufen||ST;return r};
 const loadRules=async()=>{await vers(true);const a=Object.values(VERS).find(v=>v.active);if(a){RS=a.rs;RSVER='v'+a.ver+' · '+a.rs.name}};
 async function vers(quiet){VERS={};const q=await getDocs(query(collection(db,'rulesets'),orderBy('ver','desc')));
  for(const d of q.docs){try{VERS[d.id]={ver:d.data().ver,active:d.data().active,rs:fix(await dec(d.data()))}}catch{}}
- if(quiet)return;$('vl').innerHTML='<table><tr><th>Version</th><th>Name</th><th>Zeilen</th><th>Status</th><th></th></tr>'+Object.entries(VERS).map(([id,v])=>`<tr><td>v${v.ver}</td><td>${esc(v.rs.name)}</td><td>${v.rs.rows.length}</td><td>${v.active?'aktiv':''}</td><td><button class="g" data-a="${id}">Aktivieren</button> <button class="g" data-e="${id}">In Editor</button></td></tr>`).join('')+'</table>'}
-$('vl').onclick=async e=>{const a=e.target.dataset.a,x=e.target.dataset.e;if(x){$('rj').value=JSON.stringify(VERS[x].rs,null,1);$('rn').value=VERS[x].rs.name}if(a)await activate(a)};
+ if(quiet)return;$('vl').innerHTML='<table><tr><th>Version</th><th>Name</th><th>Zeilen</th><th>Quellen</th><th>Status</th><th></th></tr>'+Object.entries(VERS).map(([id,v])=>`<tr><td>v${v.ver}</td><td>${esc(v.rs.name)}</td><td>${v.rs.rows.length}</td><td>${esc((v.rs.quellen||[]).slice(-3).join('; '))}</td><td>${v.active?'aktiv':''}</td><td><button class="g" data-a="${id}">Aktivieren</button> <button class="g" data-e="${id}">In Editor</button></td></tr>`).join('')+'</table>'}
+$('vl').onclick=async e=>{const a=e.target.dataset.a,x=e.target.dataset.e;if(x){$('rj').value=JSON.stringify(VERS[x].rs,null,1);$('rn').value=VERS[x].rs.name;rowsRender()}if(a)await activate(a)};
 async function activate(id){for(const k of Object.keys(VERS))await setDoc(doc(db,'rulesets',k),{active:k==id},{merge:true});await loadRules();build();await vers()}
 const parse=()=>{try{const r=JSON.parse($('rj').value);const e=chk(r);if(e.length){$('rm').innerHTML='<p class="no">'+e.map(esc).join('<br>')+'</p>';return null}return fix(r)}catch(x){$('rm').innerHTML='<p class="no">Kein gültiges JSON.</p>';return null}};
 $('rc').onclick=()=>{const r=parse();if(!r)return;const o=new Map(RS.rows.map(x=>[x.n,JSON.stringify(x.q)])),n=new Map(r.rows.map(x=>[x.n,JSON.stringify(x.q)]));
@@ -45,22 +45,35 @@ $('rc').onclick=()=>{const r=parse();if(!r)return;const o=new Map(RS.rows.map(x=
  $('rm').innerHTML='<p class="ok">Struktur gültig.</p><p>'+(l.length?l.map(esc).join('<br>'):'Keine Änderung gegenüber dem aktiven Regelwerk.')+'</p>'};
 $('rs').onclick=async()=>{const r=parse();if(!r)return;await vers(true);r.name=$('rn').value||r.name;const ver=Math.max(0,...Object.values(VERS).map(v=>v.ver))+1;
  const ref=doc(collection(db,'rulesets'));await setDoc(ref,{...await enc(r),ver,active:false,ts:serverTimestamp(),by:auth.currentUser.uid});await vers(true);await activate(ref.id);$('rm').innerHTML='<p class="ok">Version v'+ver+' gespeichert und aktiv.</p>'};
-$('rb').onclick=()=>{$('rj').value=JSON.stringify(DEFAULT,null,1);$('rn').value=DEFAULT.name};
+$('rb').onclick=()=>{$('rj').value=JSON.stringify(DEFAULT,null,1);$('rn').value=DEFAULT.name;rowsRender()};
 // ---- PDF lokal lesen, KI-Aufruf ----
 const red=t=>t.replace(/[\w.+-]+@[\w-]+\.[\w.-]+/g,'[E-MAIL]').replace(/\b(Tel|Telefon|Fax|Notruf)\b[^\n\d+]{0,15}[+\d][\d\s()\/-]{6,}\d/gi,'$1 [Nr.]');
 const prep=t=>$('rd2').checked?red(t):t;
 async function read(files,st){let all='',scans=[],big='';$(st).textContent='Lese …';
  try{const p=await import('./lib/pdf.min.mjs');p.GlobalWorkerOptions.workerSrc='./lib/pdf.worker.min.mjs';
-  for(const f of files){if(f.name.endsWith('.txt')){all+=await f.text();continue}
+  for(const f of files){if(/\.(txt|csv)$/i.test(f.name)){all+=await f.text();continue}
    const buf=await f.arrayBuffer(),d=await p.getDocument({data:buf.slice(0),isEvalSupported:false}).promise;let t='';
    for(let i=1;i<=d.numPages;i++){const c=await(await d.getPage(i)).getTextContent();t+=`\n[${f.name} S.${i}]\n`+c.items.map(x=>x.str).join(' ')}
    if(t.replace(/\[[^\]]*\]|\s/g,'').length<200){if(buf.byteLength<=3e6)scans.push({name:f.name,b64:b64e(buf)});else big=' Scan größer als 3 MB wurde ausgelassen.'}else all+=t}}
  catch{$(st).textContent='PDF konnte nicht gelesen werden.';return{t:all,s:scans}}
  $(st).textContent=(all||scans.length?'Geladen.':'Kein Text.')+(scans.length?' Gescannte PDF geht unverändert (ohne Schwärzung) an die KI.':'')+big;return{t:all,s:scans}}
-$('f').onchange=async e=>{const r=await read(e.target.files,'st');SCAN=r.s;$('t').value=prep(r.t)};$('rf').onchange=async e=>{$('rt').value=(await read(e.target.files,'rs2')).t};
+$('f').onchange=async e=>{const r=await read(e.target.files,'st');SCAN=r.s;$('t').value=prep(r.t)};$('rf').onchange=async e=>{RF=[...e.target.files].map(f=>f.name);$('rt').value=(await read(e.target.files,'rs2')).t};
 async function llm(mode,payload){const tk=await auth.currentUser.getIdToken();const r=await fetch('/api/ai',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+tk},body:JSON.stringify({mode,...payload})});const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||r.status);return j}
-$('rd').onclick=async()=>{const t=$('rt').value.trim();if(!t){$('rs2').textContent='Erst PDFs laden.';return}$('rs2').textContent='KI arbeitet …';
- try{const r=await llm('rules',{text:t.slice(0,100000),rules:RS});$('rj').value=JSON.stringify(r,null,1);$('rs2').textContent='Entwurf erstellt. Bitte prüfen und vergleichen.'}catch(e){$('rs2').textContent='Fehler: '+e.message}};
+function merge(b,d,neu){const o=JSON.parse(JSON.stringify(b)),m=new Map(o.rows.map(r=>[String(r.n),r]));
+ for(const r of d.rows||[])if(r&&r.n!=null&&(neu||m.has(String(r.n))))m.set(String(r.n),r);
+ o.rows=[...m.values()];const f=new Map((o.fields||[]).map(x=>[x.k,x]));for(const x of d.fields||[])if(x&&x.k)f.set(x.k,x);o.fields=[...f.values()];return o}
+function rowsRender(){let r;try{r=JSON.parse($('rj').value)}catch{$('rl').innerHTML='';return}if(!r.rows)return;
+ $('rl').innerHTML='<table><tr><th>Nr.</th><th>Bezeichnung</th><th>Quelle</th><th></th></tr>'+r.rows.map(x=>`<tr><td>${esc(x.n)}</td><td>${esc(x.t)}</td><td>${esc(x.src||'')}</td><td><button class="g" data-d="${esc(x.n)}">Entfernen</button></td></tr>`).join('')+'</table>'}
+$('rl').onclick=e=>{const n=e.target.dataset.d;if(n==null)return;try{const r=JSON.parse($('rj').value);r.rows=r.rows.filter(x=>String(x.n)!=n);$('rj').value=JSON.stringify(r,null,1);rowsRender()}catch{}};
+$('rj').onchange=rowsRender;
+$('rd').onclick=async()=>{const t=$('rt').value.trim();if(!t){$('rs2').textContent='Erst Dateien laden.';return}
+ const neu=$('rneu').checked,hint=[],ch=[];let w=JSON.parse(JSON.stringify(RS));for(let i=0;i<t.length;i+=30000)ch.push(t.slice(i,i+30000));
+ try{for(let i=0;i<ch.length;i++){$('rs2').textContent=`KI arbeitet … (Teil ${i+1} von ${ch.length})`;
+   const d=await llm('rules',{text:ch[i],rules:w,neu,hinweis:$('rh').value,stufen:w.stufen||ST});w=merge(w,d,neu);(d.hinweise||[]).forEach(x=>hint.push(x))}
+  w.quellen=[...(RS.quellen||[]),...RF.map(n=>n+' ('+new Date().toLocaleDateString('de-DE')+')')];
+  $('rj').value=JSON.stringify(w,null,1);rowsRender();$('rs2').textContent='Entwurf erstellt. Bitte prüfen und vergleichen.';
+  $('rm').innerHTML=hint.length?'<h3>Hinweise der KI</h3><p>'+hint.map(esc).join('<br>')+'</p>':''}
+ catch(e){$('rs2').textContent='Fehler: '+e.message}};
 // ---- Formular, Auswertung ----
 const fld=k=>RS.fields.find(f=>f.k==k);
 function build(){$('rv').textContent=RSVER;$('fm').innerHTML=RS.fields.map(({k,l,t})=>`<div><label for="f_${k}">${esc(l)}</label>`+(t=='b'?`<select id="f_${k}"><option value="">?</option><option value="1">ja</option><option value="0">nein</option></select>`:t=='e'?`<select id="f_${k}"><option value="">?</option><option>EC1PLUS</option><option>EC1</option><option>EC2</option><option value="keiner">keiner</option></select>`:`<input id="f_${k}" ${t=='d'?'type="date"':''}>`)+`<small class="b" id="b_${k}"></small></div>`).join('');
@@ -78,23 +91,23 @@ function ev(c){
  if(c.in)return[c.in.map(norm).includes(norm(v))?'ok':'no',`${c.k} = ${v} (zulässig: ${c.in.join(', ')})`];
  return[norm(v).includes(norm(c.has))?'ok':'no',`${c.k} = ${v} (gefordert …${c.has})`]}
 const age=(d,y)=>d&&(Date.now()-new Date(d))/31557600000>y,sy={ok:'✔ erfüllt',no:'✘ nicht erfüllt',unk:'? nicht belegt'};
-$('b').onclick=()=>{const sel=[...$('rw').querySelectorAll('input:checked')].map(i=>+i.value);if(!sel.length){$('out').innerHTML='<p class="no">Bitte mindestens eine Matrixzeile wählen.</p>';return}
- let min=4,minU=false,det='';const pn=val('produkt')||'Produkt';
+$('b').onclick=()=>{const sel=[...$('rw').querySelectorAll('input:checked')].map(i=>i.value);if(!sel.length){$('out').innerHTML='<p class="no">Bitte mindestens eine Matrixzeile wählen.</p>';return}
+ const NSS=NS(RS),lb=x=>RS.stufen[x];let min=NSS,minU=false,det='';const pn=val('produkt')||'Produkt';
  for(const n of sel){const r=RS.rows.find(x=>x.n==n);let er=0,stop=null,rows='';
-  for(let s=0;s<4;s++){let all='ok';for(const c of r.q[s]){const[st,tx]=ev(c);rows+=`<tr><td>QS${s+1}</td><td>${esc(tx)}</td><td class="${st}">${sy[st]}</td></tr>`;if(st!='ok'&&all!='no')all=st}
+  for(let s=0;s<NSS;s++){let all='ok';for(const c of r.q[s]){const[st,tx]=ev(c);rows+=`<tr><td>${esc(lb(s))}</td><td>${esc(tx)}</td><td class="${st}">${sy[st]}</td></tr>`;if(st!='ok'&&all!='no')all=st}
    if(all=='ok')er=s+1;else{stop=all;break}}
   min=Math.min(min,er);if(stop=='unk')minU=true;
-  det+=`<h3>Zeile ${r.n}: ${esc(r.t)}</h3><p>Voraussichtlich <b>QS${er||'<1'}</b>${stop=='unk'?' (höher möglich bei fehlenden Nachweisen)':''}</p><table><tr><th>Stufe</th><th>Befund</th><th>Status</th></tr>${rows}</table>`}
- const qs=min||'<1',w=[];if(age(val('svhcDatum'),RS.limits.svhcYears))w.push(`SVHC-Erklärung älter als ${RS.limits.svhcYears} Jahr(e)`);if(age(val('emDatum'),RS.limits.emYears))w.push(`Emissionsprüfung älter als ${RS.limits.emYears} Jahre`);if(val('svhcOver')===true)w.push('SVHC > 0,1 %: Bonus 5 / KPI 3 nicht erfüllt');
- $('out').innerHTML=`<h2>Ergebnis: ${esc(pn)}</h2><p class="big">Voraussichtlich geeignet für QS${qs} (Produkt-Ebene)${minU?' – Konfidenz niedrig, Nachweise fehlen':''}</p>`+(w.length?'<p class="no">Hinweise: '+w.map(esc).join('; ')+'</p>':'')+det+`<p class="s">Prognose auf Basis der übermittelten Unterlagen und des Regelwerks ${esc(RSVER)}. QS3/QS4 erfordern zusätzlich Bauteilekatalog und Baustellenprotokolle. Verbindlich ist die Bewertung der DGNB-Auditorin bzw. des Auditors. Erstellt ${new Date().toLocaleString('de-DE')}.</p>`;
+  det+=`<h3>Zeile ${esc(r.n)}: ${esc(r.t)}${r.src?' <small class="s">(Quelle: '+esc(r.src)+')</small>':''}</h3><p>Voraussichtlich <b>${er?esc(lb(er-1)):'&lt;'+esc(lb(0))}</b>${stop=='unk'?' (höher möglich bei fehlenden Nachweisen)':''}</p><table><tr><th>Stufe</th><th>Befund</th><th>Status</th></tr>${rows}</table>`}
+ const qs=min?lb(min-1):'<'+lb(0),w=[];if(age(val('svhcDatum'),RS.limits.svhcYears))w.push(`SVHC-Erklärung älter als ${RS.limits.svhcYears} Jahr(e)`);if(age(val('emDatum'),RS.limits.emYears))w.push(`Emissionsprüfung älter als ${RS.limits.emYears} Jahre`);if(val('svhcOver')===true)w.push('SVHC > 0,1 %: Bonus 5 / KPI 3 nicht erfüllt');
+ $('out').innerHTML=`<h2>Ergebnis: ${esc(pn)}</h2><p class="big">Voraussichtlich geeignet für ${esc(qs)} (Produkt-Ebene)${minU?' – Konfidenz niedrig, Nachweise fehlen':''}</p>`+(w.length?'<p class="no">Hinweise: '+w.map(esc).join('; ')+'</p>':'')+det+`<p class="s">Prognose auf Basis der übermittelten Unterlagen und des Regelwerks ${esc(RSVER)}. ${esc(RS.hinweis||'QS3/QS4 erfordern zusätzlich Bauteilekatalog und Baustellenprotokolle.')} Verbindlich ist die Bewertung der DGNB-Auditorin bzw. des Auditors. Erstellt ${new Date().toLocaleString('de-DE')}.</p>`;
  LAST={produkt:pn,werte:vals(),zeilen:sel,qs:String(qs)+(minU?'?':''),ver:RSVER};$('sv').disabled=false;$('sm').textContent=''};
 $('pr').onclick=()=>print();
 $('sv').onclick=async()=>{await setDoc(doc(collection(db,'bewertungen')),{...await enc(LAST),ts:serverTimestamp(),by:auth.currentUser.uid});$('sm').textContent='Verschlüsselt gespeichert.';$('sv').disabled=true};
 async function hist(){const q=await getDocs(query(collection(db,'bewertungen'),orderBy('ts','desc')));H={};let h='<table><tr><th>Datum</th><th>Produkt</th><th>QS</th><th>Regelwerk</th><th></th></tr>';
- for(const d of q.docs){try{const o=await dec(d.data());H[d.id]=o;h+=`<tr><td>${d.data().ts?d.data().ts.toDate().toLocaleDateString('de-DE'):''}</td><td>${esc(o.produkt)}</td><td>${esc(o.qs)}</td><td>${esc(o.ver)}</td><td><button class="g" data-o="${d.id}">Laden</button> <button class="g" data-x="${d.id}">Löschen</button></td></tr>`}catch{}}
+ for(const d of q.docs){try{const o=await dec(d.data());H[d.id]=o;h+=`<tr><td>${d.data().ts?d.data().ts.toDate().toLocaleDateString('de-DE'):''}</td><td>${esc(o.produkt)}</td><td>${esc((/^\d/.test(o.qs)?'QS':'')+o.qs)}</td><td>${esc(o.ver)}</td><td><button class="g" data-o="${d.id}">Laden</button> <button class="g" data-x="${d.id}">Löschen</button></td></tr>`}catch{}}
  $('hl').innerHTML=h+'</table>'}
 $('hl').onclick=async e=>{const o=e.target.dataset.o,x=e.target.dataset.x;if(x&&confirm('Eintrag löschen?')){await deleteDoc(doc(db,'bewertungen',x));hist()}
- if(o){const v=H[o];document.querySelector('nav button[data-t=b]').click();setv(v.werte);$('rw').querySelectorAll('input').forEach(i=>i.checked=v.zeilen.includes(+i.value));$('b').click()}};
+ if(o){const v=H[o];document.querySelector('nav button[data-t=b]').click();setv(v.werte);$('rw').querySelectorAll('input').forEach(i=>i.checked=v.zeilen.map(String).includes(i.value));$('b').click()}};
 // ---- Werte-Extraktion (Claude über serverseitige Funktion) ----
 $('x').onclick=async()=>{const t=prep($('t').value.trim());if(!t&&!SCAN.length){$('st').textContent='Kein Text.';return}$('st').textContent='KI arbeitet …';
  try{const j=await llm('values',{text:t.slice(0,100000),fields:RS.fields.map(({k,l,t:y})=>({k,l,t:y})),pdfs:SCAN.slice(0,1).map(x=>x.b64)});const b=j.belege||{};

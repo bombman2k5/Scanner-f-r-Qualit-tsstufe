@@ -3,7 +3,7 @@
 ## 1. Firebase (nur Anmeldung und verschlüsselte Ablage)
 1. Projekt anlegen (Region EU, z. B. europe-west3). Web-App registrieren, Konfigurationswerte notieren.
 2. Authentication → E-Mail/Passwort aktivieren. Einstellungen → Benutzeraktionen: **Selbstregistrierung deaktivieren**.
-3. **Whitelist = Nutzerliste:** Nutzer unter Authentication → Nutzer manuell anlegen (E-Mail genügt). Die Person setzt ihr Passwort über „Passwort setzen oder zurücksetzen“ auf der Login-Seite. Wer nicht angelegt ist, kommt weder in die App noch an die KI-Funktion.
+3. **Whitelist = Nutzerliste:** Nutzer unter Authentication → Users → Add user anlegen (E-Mail und Startpasswort, das Passwort ist Pflicht). Die Person kann ihr Passwort über „Passwort setzen oder zurücksetzen“ auf der Login-Seite selbst festlegen. Wer nicht angelegt ist, kommt weder in die App noch an die KI-Funktion.
 4. Firestore (Native) anlegen, Inhalt von `firestore.rules` unter „Regeln“ veröffentlichen.
 5. Authentication → Einstellungen → Autorisierte Domains: Ihre Vercel-Domain eintragen.
 

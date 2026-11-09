@@ -26,8 +26,11 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 <section class="np"><h2>3 Matrixzeilen</h2><div class="rows" id="rw"></div><div class="r"><button id="b">Bewerten</button><button class="g" id="sv" disabled>Speichern</button><button class="g" id="pr">Als PDF drucken</button><span class="s" id="sm" aria-live="polite"></span></div></section>
 <section id="out"></section></section>
 <section id="t_v" hidden><h2>Verlauf</h2><div id="hl"></div></section>
-<section id="t_g" hidden><h2>Bewertungsgrundlage aktualisieren</h2><p class="s">Neue DGNB-PDFs hochladen, Entwurf per lokalem Modell erzeugen, prüfen, als neue Version speichern. Frühere Versionen bleiben erhalten.</p>
-<div class="r"><div><label>DGNB-PDFs</label><input type="file" id="rf" accept=".pdf,.txt" multiple></div><button id="rd">Regelentwurf per Modell</button><button class="g" id="rb">Integriertes Standard-Regelwerk laden</button><span class="s" id="rs2" aria-live="polite"></span></div>
-<textarea id="rt" placeholder="Text der hochgeladenen PDFs"></textarea><h3>Regelwerk (JSON, bearbeitbar)</h3><textarea class="j" id="rj"></textarea>
+<section id="t_g" hidden><h2>Bewertungsgrundlage aktualisieren</h2><p class="s">Neue oder weitere Grundlagen hochladen, die KI erstellt einen Entwurf (geänderte und neue Zeilen werden in das bestehende Regelwerk eingearbeitet). Sie prüfen, vergleichen und speichern als neue Version. Frühere Versionen bleiben erhalten und lassen sich wieder aktivieren. Tipp: Die DGNB-Excel-Matrix als CSV speichern und hochladen, das liefert bessere Ergebnisse als das verkleinerte PDF.</p>
+<div class="r"><div><label for="rf">Neue oder geänderte Bewertungsgrundlagen (PDF, TXT oder CSV)</label><input type="file" id="rf" accept=".pdf,.txt,.csv" multiple></div></div>
+<div class="r"><label style="color:var(--ink)"><input type="checkbox" id="rneu" checked> Neue Matrixzeilen aufnehmen (abgewählt: nur bestehende Zeilen anpassen)</label></div>
+<div class="r"><div style="flex:1 1 320px"><label for="rh">Hinweis an die KI (optional, z. B. „nur Zeilen 6 und 7 aufnehmen“)</label><input id="rh" maxlength="500" style="width:100%"></div></div>
+<div class="r"><button id="rd">Regelentwurf erzeugen</button><button class="g" id="rb">Standard-Regelwerk laden</button><span class="s" id="rs2" aria-live="polite"></span></div>
+<textarea id="rt" placeholder="Text der hochgeladenen PDFs"></textarea><h3>Regelwerk (JSON, bearbeitbar)</h3><textarea class="j" id="rj"></textarea><h3>Zeilen im Editor</h3><div id="rl"></div>
 <div class="r"><div><label>Name der Version</label><input id="rn" size="30"></div><button class="g" id="rc">Prüfen und vergleichen</button><button id="rs">Als neue Version speichern und aktivieren</button></div><div id="rm"></div><h3>Versionen</h3><div id="vl"></div></section>
 </div></main><script type="module" src="app.js"></script></body></html>
