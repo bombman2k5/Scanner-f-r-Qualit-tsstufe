@@ -108,7 +108,7 @@ async function hist(){const q=await getDocs(query(collection(db,'bewertungen'),o
  $('hl').innerHTML=h+'</table>'}
 $('hl').onclick=async e=>{const o=e.target.dataset.o,x=e.target.dataset.x;if(x&&confirm('Eintrag löschen?')){await deleteDoc(doc(db,'bewertungen',x));hist()}
  if(o){const v=H[o];document.querySelector('nav button[data-t=b]').click();setv(v.werte);$('rw').querySelectorAll('input').forEach(i=>i.checked=v.zeilen.map(String).includes(i.value));$('b').click()}};
-// ---- Werte-Extraktion (Claude über serverseitige Funktion) ----
+// ---- Werte-Extraktion (Gemini über serverseitige Funktion) ----
 $('x').onclick=async()=>{const t=prep($('t').value.trim());if(!t&&!SCAN.length){$('st').textContent='Kein Text.';return}$('st').textContent='KI arbeitet …';
  try{const j=await llm('values',{text:t.slice(0,100000),fields:RS.fields.map(({k,l,t:y})=>({k,l,t:y})),pdfs:SCAN.slice(0,1).map(x=>x.b64)});const b=j.belege||{};
   for(const f of RS.fields){const v=j[f.k];if(v==null)continue;$('f_'+f.k).value=f.t=='b'?(v?'1':'0'):v;$('b_'+f.k).textContent=b[f.k]||''}$('st').textContent='Fertig. Werte bitte prüfen.'}catch(e){$('st').textContent='Fehler: '+e.message}};

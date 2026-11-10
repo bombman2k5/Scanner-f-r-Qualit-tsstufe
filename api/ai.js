@@ -20,30 +20,32 @@ export default async function handler(req,res){
   let system,schema,max,content=[];
   if(mode==='values'){
     if(!Array.isArray(fields)||fields.length>80||!fields.every(f=>/^[A-Za-z0-9_]{1,40}$/.test(f.k)&&typeof f.l==='string'&&f.l.length<100))return res.status(400).json({error:'Felder ungültig'});
-    const p={};for(const f of fields)p[f.k]={type:TY[f.t]||'string',description:f.l+(f.t==='d'?' (JJJJ-MM-TT)':f.t==='e'?' (EC1PLUS, EC1, EC2 oder keiner)':'')};
-    p.belege={type:'object',additionalProperties:{type:'string'},description:'Feldname -> wörtliche Fundstelle'};
-    system=SYS_V;schema={type:'object',properties:p};max=3000;
-    for(const b of (Array.isArray(pdfs)?pdfs.slice(0,1):[]))if(typeof b==='string'&&b.length<4.2e6)content.push({type:'document',source:{type:'base64',media_type:'application/pdf',data:b}});
-    content.push({type:'text',text:'DOKUMENTTEXT:\n'+text});
+    const GTY={n:'NUMBER',b:'BOOLEAN',s:'STRING',d:'STRING',e:'STRING'};const p={};for(const f of fields)p[f.k]={type:GTY[f.t]||'STRING',description:f.l+(f.t==='d'?' (JJJJ-MM-TT)':f.t==='e'?' (EC1PLUS, EC1, EC2 oder keiner)':'')};
+    p.belege={type:'OBJECT',additionalProperties:{type:'STRING'},description:'Feldname -> wörtliche Fundstelle'};
+    system=SYS_V;schema={type:'OBJECT',properties:p};max=3000;
+    for(const b of (Array.isArray(pdfs)?pdfs.slice(0,1):[]))if(typeof b==='string'&&b.length<4.2e6)content.push({inlineData:{mimeType:'application/pdf',data:b}});
+    content.push({text:'DOKUMENTTEXT:\n'+text});
   }else if(mode==='rules'){
     const rj=JSON.stringify(rules||{});
     if(rj.length>200000||!text||!Array.isArray(stufen)||stufen.length<2||stufen.length>6||!stufen.every(x=>typeof x==='string'&&x.length<=20)||typeof hinweis!=='string'||hinweis.length>500)return res.status(400).json({error:'Eingabe ungültig'});
     system=sysR(!!neu,stufen,hinweis);max=8000;
-    schema={type:'object',required:['rows'],properties:{
-      fields:{type:'array',items:{type:'object',required:['k','l','t'],properties:{k:{type:'string'},l:{type:'string'},t:{type:'string',enum:['s','n','b','d','e']}}}},
-      rows:{type:'array',items:{type:'object',required:['n','t','q'],properties:{n:{type:'string'},t:{type:'string'},src:{type:'string'},q:{type:'array',items:{type:'array',items:{type:'object'}}}}}},
-      hinweise:{type:'array',items:{type:'string'}}}};
-    content.push({type:'text',text:'AKTUELLES REGELWERK:\n'+rj+'\n\nNEUER TEXT:\n'+text});
+    schema={type:'OBJECT',required:['rows'],properties:{
+      fields:{type:'ARRAY',items:{type:'OBJECT',required:['k','l','t'],properties:{k:{type:'STRING'},l:{type:'STRING'},t:{type:'STRING',enum:['s','n','b','d','e']}}}},
+      rows:{type:'ARRAY',items:{type:'OBJECT',required:['n','t','q'],properties:{n:{type:'STRING'},t:{type:'STRING'},src:{type:'STRING'},q:{type:'ARRAY',items:{type:'ARRAY',items:{type:'OBJECT'}}}}}},
+      hinweise:{type:'ARRAY',items:{type:'STRING'}}}};
+    content.push({text:'AKTUELLES REGELWERK:\n'+rj+'\n\nNEUER TEXT:\n'+text});
   }else return res.status(400).json({error:'Unbekannter Modus'});
   try{
-    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',
-      headers:{'content-type':'application/json','x-api-key':process.env.ANTHROPIC_API_KEY,'anthropic-version':'2023-06-01'},
-      body:JSON.stringify({model:process.env.ANTHROPIC_MODEL||'claude-sonnet-5-5',max_tokens:max,system,
-        tools:[{name:'ergebnis',description:'Strukturiertes Ergebnis',input_schema:schema}],tool_choice:{type:'tool',name:'ergebnis'},
-        messages:[{role:'user',content}]})});
-    if(!r.ok){console.error('anthropic status',r.status);return res.status(502).json({error:'KI-Dienst meldet Fehler ('+r.status+')'})}
-    const out=(await r.json()).content?.find(b=>b.type==='tool_use');
-    if(!out)return res.status(502).json({error:'Keine verwertbare KI-Antwort'});
-    res.json(out.input);
+    const model=process.env.GEMINI_MODEL||'gemini-1.5-pro';
+    const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+model+':generateContent?key='+process.env.GEMINI_API_KEY,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({
+      systemInstruction:{parts:[{text:system}]},
+      contents:[{role:'user',parts:content}],
+      generationConfig:{maxOutputTokens:max,temperature:0,responseMimeType:'application/json',responseSchema:schema}
+    })}));
+    if(!r.ok){console.error('gemini status',r.status);return res.status(502).json({error:'KI-Dienst meldet Fehler ('+r.status+')'})}
+    const j=await r.json();
+    const txt=j.candidates?.[0]?.content?.parts?.[0]?.text;
+    if(!txt)return res.status(502).json({error:'Keine verwertbare KI-Antwort'});
+    res.json(JSON.parse(txt.replace(/^```json\n/,'').replace(/\n```$/,'').trim()));
   }catch{res.status(502).json({error:'KI-Dienst nicht erreichbar'})}
 }

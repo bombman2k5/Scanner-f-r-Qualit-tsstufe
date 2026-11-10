@@ -10,15 +10,15 @@
 ## 2. Vercel
 1. Ordner als Git-Repository bereitstellen, in Vercel importieren (Framework „Other“, Einstellungen kommen aus `vercel.json`).
 2. Umgebungsvariablen (Production):
-   - `ANTHROPIC_API_KEY` – Schlüssel aus der Anthropic-Konsole (nur serverseitig, nie im Browser)
+   - `GEMINI_API_KEY` – Schlüssel aus der Google AI Studio / Vertex AI Konsole (nur serverseitig, nie im Browser)
    - `FIREBASE_API_KEY`, `FIREBASE_AUTH_DOMAIN`, `FIREBASE_PROJECT_ID`, `FIREBASE_APP_ID` – Web-Konfiguration
    - optional `ALLOWED_EMAILS` – kommagetrennte Liste; ist sie gesetzt, darf nur diese Gruppe die KI nutzen (zusätzliche Sperre)
-   - optional `ANTHROPIC_MODEL` – Standard `claude-sonnet-5-5`
+   - optional `GEMINI_MODEL` – Standard `gemini-1.5-pro`
 3. Deploy. Der Build kopiert pdf.js (Version 4.10.38) nach `public/lib`.
 4. Erster Nutzer legt beim Entsperren die Team-Passphrase fest (mind. 12 Zeichen, nicht wiederherstellbar).
 
 ## Schutz der Firmendaten
 - Gespeicherte Bewertungen und Regelwerke: AES-GCM im Browser, Schlüssel aus der Team-Passphrase, wird nie übertragen. Firebase sieht nur Chiffretext und Metadaten.
-- KI-Auswertung: Der im Textfeld sichtbare Text geht über TLS an die serverseitige Funktion und von dort an die Claude-API. Die App speichert und protokolliert ihn nicht. Kontaktdaten werden auf Wunsch vorher geschwärzt. Gescannte PDFs (max. 3 MB) gehen unverändert an die KI.
+- KI-Auswertung: Der im Textfeld sichtbare Text geht über TLS an die serverseitige Funktion und von dort an die Gemini-API. Die App speichert und protokolliert ihn nicht. Kontaktdaten werden auf Wunsch vorher geschwärzt. Gescannte PDFs (max. 3 MB) gehen unverändert an die KI.
 - API-Schlüssel nur auf dem Server. Sicherheits-Header und CSP stehen in `vercel.json`. Der Server baut die Prompts selbst (kein offener KI-Proxy).
-- Vertragliche Seite (Auftragsverarbeitung, Datenaufbewahrung, Datenschutzfolgenabschätzung für Anthropic, Google/Firebase und Vercel) intern klären.
+- Vertragliche Seite (Auftragsverarbeitung, Datenaufbewahrung, Datenschutzfolgenabschätzung für Google/Gemini, Firebase und Vercel) intern klären.
