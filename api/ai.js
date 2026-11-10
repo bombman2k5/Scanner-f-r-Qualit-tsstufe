@@ -36,7 +36,7 @@ export default async function handler(req,res){
     content.push({text:'AKTUELLES REGELWERK:\n'+rj+'\n\nNEUER TEXT:\n'+text});
   }else return res.status(400).json({error:'Unbekannter Modus'});
   try{
-    const model=process.env.GEMINI_MODEL||'gemini-1.5-pro';
+    const model=process.env.GEMINI_MODEL||'gemini-3.8-flash';
     const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+model+':generateContent?key='+process.env.GEMINI_API_KEY,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({
       systemInstruction:{parts:[{text:system}]},
       contents:[{role:'user',parts:content}],

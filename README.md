@@ -13,7 +13,7 @@
    - `GEMINI_API_KEY` – Schlüssel aus der Google AI Studio / Vertex AI Konsole (nur serverseitig, nie im Browser)
    - `FIREBASE_API_KEY`, `FIREBASE_AUTH_DOMAIN`, `FIREBASE_PROJECT_ID`, `FIREBASE_APP_ID` – Web-Konfiguration
    - optional `ALLOWED_EMAILS` – kommagetrennte Liste; ist sie gesetzt, darf nur diese Gruppe die KI nutzen (zusätzliche Sperre)
-   - optional `GEMINI_MODEL` – Standard `gemini-1.5-pro`
+   - optional `GEMINI_MODEL` – Standard `gemini-3.8-flash`
 3. Deploy. Der Build kopiert pdf.js (Version 4.10.38) nach `public/lib`.
 4. Erster Nutzer legt beim Entsperren die Team-Passphrase fest (mind. 12 Zeichen, nicht wiederherstellbar).
 
