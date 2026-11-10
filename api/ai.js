@@ -41,7 +41,7 @@ export default async function handler(req,res){
       systemInstruction:{parts:[{text:system}]},
       contents:[{role:'user',parts:content}],
       generationConfig:{maxOutputTokens:max,temperature:0,responseMimeType:'application/json',responseSchema:schema}
-    })}));
+    })} );
     if(!r.ok){console.error('gemini status',r.status);return res.status(502).json({error:'KI-Dienst meldet Fehler ('+r.status+')'})}
     const j=await r.json();
     const txt=j.candidates?.[0]?.content?.parts?.[0]?.text;
